@@ -9,10 +9,8 @@ import java.util.Properties;
 
 import org.apache.cassandra.db.Column;
 import org.apache.cassandra.db.ColumnFamily;
-import org.apache.cassandra.db.DeletedColumn;
 import org.apache.cassandra.db.RowMutation;
 import org.apache.cassandra.io.util.FileUtils;
-import org.apache.cassandra.locator.SnitchProperties;
 import org.apache.cassandra.triggers.ITrigger;
 
 public class InvertedIndex implements ITrigger {
@@ -33,7 +31,7 @@ public class InvertedIndex implements ITrigger {
 
     private static Properties loadProperties() {
         Properties properties = new Properties();
-        InputStream stream = SnitchProperties.class.getClassLoader().getResourceAsStream("InvertedIndex.properties");
+        InputStream stream = InvertedIndex.class.getClassLoader().getResourceAsStream("InvertedIndex.properties");
         try {
             properties.load(stream);
         } catch (Exception e) {
