@@ -1,4 +1,4 @@
-package com.apache.cassandra.triggers;
+package org.apache.cassandra.triggers;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -6,26 +6,27 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 
-import org.apache.cassandra.db.Column;
 import org.apache.cassandra.db.ColumnFamily;
 import org.apache.cassandra.db.RowMutation;
+import org.apache.cassandra.db.marshal.UUIDType;
 import org.apache.cassandra.io.util.FileUtils;
-import org.apache.cassandra.triggers.ITrigger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class InvertedIndex implements ITrigger {
+public class LogColumnUpdates implements ITrigger {
+    private static final Logger logger = LoggerFactory.getLogger(InvertedIndex.class);
     private Properties properties = loadProperties();
+    String column_family = properties.getProperty("uniq_columnfamily");
 
     public Collection<RowMutation> augment(ByteBuffer key, ColumnFamily update) {
         List<RowMutation> mutations = new ArrayList<RowMutation>();
-        for (ByteBuffer name : update.getColumnNames()) {
-            RowMutation mutation = new RowMutation(properties.getProperty("keyspace"), update.getColumn(name).value());
-            ColumnFamily columnFamily = ColumnFamily.create(properties.getProperty("keyspace"),
-                    properties.getProperty("columnfamily"));
-            columnFamily.addColumn(new Column(name, key, System.currentTimeMillis()));
-            mutation.add(columnFamily);
-            mutations.add(mutation);
-        }
+        RowMutation mutation = new RowMutation(properties.getProperty("keyspace"), key);
+        // add a column counts.
+        for (ByteBuffer name : update.getColumnNames())
+            mutation.add(column_family, UUIDType.instance.decompose(UUID.randomUUID()), name, System.currentTimeMillis());
+        mutations.add(mutation);
         return mutations;
     }
 
@@ -39,6 +40,7 @@ public class InvertedIndex implements ITrigger {
         } finally {
             FileUtils.closeQuietly(stream);
         }
+        logger.info("loaded property file, InvertedIndex.properties");
         return properties;
     }
 }
